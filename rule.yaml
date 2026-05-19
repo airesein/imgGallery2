@@ -1,0 +1,17 @@
+- name: "lh"
+  cover: "https://imglf5.lf127.net/img/{{id}}.jpg?imageView&thumbnail=811x0"
+  display: "https://imglf5.lf127.net/img/{{id}}.jpg"
+  raw: "https://imglf5.lf127.net/img/{{id}}.jpg"
+  download: "js"
+
+- name: "xxt"
+  cover: "https://p.ananas.chaoxing.com/star4/{{id}}/600_0cQ80.webp"
+  display: "https://p.ananas.chaoxing.com/star4/{{id}}/3000_0cQ80.webp"
+  raw: "https://p.ananas.chaoxing.com/star4/{{id}}/origin.jpg"
+  download: "js"
+
+- name: "zoho"
+  cover: "https://previewengine.zoho.com.cn/thumbnail/WD/{{id}}"
+  display_video: "https://files.zohopublic.com.cn/public/workdrive-public/previewdata/{{id}}"
+  raw: "https://files.zohopublic.com.cn/public/workdrive-public/download/{{id}}?x-cli-msg=%7B%22isFileOwner%22%3Afalse%2C%22version%22%3A%221.0%22%2C%22isWDSupport%22%3Afalse%7D"
+  download: "zj"
