@@ -57,3 +57,11 @@ watch(
 export function useSettings() {
   return { settings, set, reset, defaults }
 }
+
+export function getColumnCount() {
+  const width = window.innerWidth
+  if (width <= 560) return 1
+  if (width <= 900) return 2
+  if (width <= 1400) return 3
+  return 4
+}

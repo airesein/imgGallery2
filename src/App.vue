@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, provide, onMounted } from 'vue'
+import { ref, reactive, provide, onMounted, computed } from 'vue'
 import FloatingNav from './components/FloatingNav.vue'
 import { useSettings } from './composables/useSettings.js'
 import { useCatalog } from './composables/useCatalog.js'
@@ -7,6 +7,11 @@ import { useCatalog } from './composables/useCatalog.js'
 const { catalog, rules, getItemUrl, getItemType, getItemDownload, isVideo, flattenCategory } = useCatalog()
 const loading = ref(true)
 const error = ref(false)
+
+const categoryCovers = computed(() => {
+  if (!catalog.value?.categories) return []
+  return catalog.value.categories.map(c => ({ name: c.name, cover: c.cover, total: c.total }))
+})
 
 const uiState = reactive({
   searchQuery: '',
@@ -41,6 +46,7 @@ provide('getItemType', getItemType)
 provide('getItemDownload', getItemDownload)
 provide('isVideo', isVideo)
 provide('flattenCategory', flattenCategory)
+provide('categoryCovers', categoryCovers)
 
 function setMeta(name, content) {
   if (!content) return
@@ -118,6 +124,10 @@ onMounted(async () => {
   <main>
     <div v-if="loading" class="loading">加载中...</div>
     <div v-else-if="error" class="error">数据加载失败，请刷新重试</div>
-    <RouterView v-else-if="catalog" />
+    <RouterView v-slot="{ Component }" v-else-if="catalog">
+      <KeepAlive>
+        <component :is="Component" />
+      </KeepAlive>
+    </RouterView>
   </main>
 </template>

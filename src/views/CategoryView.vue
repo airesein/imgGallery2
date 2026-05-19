@@ -3,25 +3,28 @@ import { inject, computed, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
 import CategoryCard from '../components/CategoryCard.vue'
 import { useFavorites } from '../composables/useFavorites.js'
-import { useCatalog } from '../composables/useCatalog.js'
 
-const catalog = inject('catalog')
+const categoryCovers = inject('categoryCovers')
 const uiState = inject('uiState')
 const uiActions = inject('uiActions')
-const { getItemUrl, flattenCategory } = useCatalog()
+const settings = inject('settings')
 const router = useRouter()
 const { favorites } = useFavorites()
 
 const filtered = computed(() => {
+  const covers = categoryCovers.value
   const q = uiState.searchQuery.trim().toLowerCase()
-  if (!q) return catalog.value.categories
-  return catalog.value.categories.filter(c => c.name.toLowerCase().includes(q))
+  if (!q) return covers
+  return covers.filter(c => c.name.toLowerCase().includes(q))
 })
 
-function getFirstItemCover(cat) {
-  const flat = flattenCategory(cat)
-  return flat.length > 0 ? getItemUrl(flat[0], 'cover') : cat.cover
-}
+const masonryStyle = computed(() => {
+  const base = { columnGap: `${settings.value.cardGap}px` }
+  if (settings.value.columns > 0) {
+    base.columnCount = settings.value.columns
+  }
+  return base
+})
 
 function openCategory(name) {
   router.push(`/category/${encodeURIComponent(name)}`)
@@ -36,8 +39,8 @@ watchEffect(() => {
 
 <template>
   <div class="cat-page">
-    <div class="cat-masonry">
-      <div class="cat-fav-card" @click="router.push('/favorites')">
+    <div class="cat-masonry" :style="masonryStyle">
+      <div class="cat-fav-card" :style="{ marginBottom: `${settings.cardGap}px` }" @click="router.push('/favorites')">
         <div class="cat-fav-inner">
           <span class="cat-fav-icon">★</span>
           <span class="cat-fav-label">收藏</span>
@@ -49,8 +52,9 @@ watchEffect(() => {
         v-for="cat in filtered"
         :key="cat.name"
         :name="cat.name"
-        :cover="getFirstItemCover(cat)"
+        :cover="cat.cover"
         :count="cat.total"
+        :style="{ marginBottom: `${settings.cardGap}px` }"
         @click="openCategory(cat.name)"
       />
     </div>
@@ -62,14 +66,16 @@ watchEffect(() => {
 .cat-page { padding: 68px 12px 48px; max-width: 1600px; margin: 0 auto; }
 .cat-masonry {
   column-count: 4;
-  column-gap: 10px;
 }
-.cat-masonry > * { break-inside: avoid; margin-bottom: 10px; }
-.cat-empty { text-align: center; padding: 60px 20px; color: rgba(255,255,255,0.35); }
-
+.cat-masonry > * {
+  break-inside: avoid;
+  vertical-align: top;
+}
 @media (max-width: 1100px) { .cat-masonry { column-count: 3; } }
 @media (max-width: 820px) { .cat-masonry { column-count: 2; } }
 @media (max-width: 560px) { .cat-masonry { column-count: 1; } }
+
+.cat-empty { text-align: center; padding: 60px 20px; color: rgba(255,255,255,0.35); }
 
 .cat-fav-card {
   border-radius: 12px; overflow: hidden; cursor: pointer;
@@ -83,6 +89,7 @@ watchEffect(() => {
 .cat-fav-card,
 :deep(.category-card) {
   box-shadow: 0 10px 30px rgba(0,0,0,0.32);
+  display: block;
 }
 
 .cat-fav-inner {

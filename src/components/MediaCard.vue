@@ -18,6 +18,8 @@ const isVideo = computed(() => isVideoFn(props.item))
 const ratio = ref('')
 
 const RATIO_KEY = 'gallery-item-ratios'
+const baseCoverUrl = getItemUrl(props.item, 'cover')
+const coverUrl = ref(baseCoverUrl)
 
 function loadRatioCache() {
   try {
@@ -26,13 +28,6 @@ function loadRatioCache() {
     return {}
   }
 }
-
-const coverUrl = computed(() => {
-  const base = getItemUrl(props.item, 'cover')
-  if (!base || retryCount.value === 0) return base
-  const sep = base.includes('?') ? '&' : '?'
-  return base + sep + '_r=' + retryCount.value + '_' + Date.now()
-})
 
 onMounted(() => {
   const cache = loadRatioCache()
@@ -58,14 +53,14 @@ function onLoad(e) {
 }
 
 function onError() {
-  if (loaded.value) return
+  if (loaded.value || failed.value) return
   if (retryCount.value < MAX_RETRIES) {
     retryCount.value++
-    failed.value = false
-    const delay = 300 * retryCount.value
+    const delay = 500 * retryCount.value
     retryTimer.value = setTimeout(() => {
       if (!loaded.value && !failed.value) {
-        failed.value = false
+        const sep = baseCoverUrl.includes('?') ? '&' : '?'
+        coverUrl.value = baseCoverUrl + sep + '_retry=' + retryCount.value + '_' + Date.now()
       }
     }, delay)
   } else {
@@ -77,11 +72,10 @@ function onError() {
 
 <template>
   <div class="mc" :class="{ selectable, selected }" @click="emit('click')">
-    <div class="mc-img" :data-key="itemKey" :class="{ loaded, failed }">
+    <div class="mc-img" :class="{ loaded, failed }">
       <div v-if="!loaded" class="mc-skeleton"></div>
       <img
         v-if="!failed"
-        :key="retryCount"
         :src="coverUrl"
         :alt="item.id"
         class="mc-real"
