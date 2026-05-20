@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 
 const props = defineProps({
   name: String,
@@ -9,6 +9,30 @@ const props = defineProps({
 
 const emit = defineEmits(['click'])
 const imgFailed = ref(false)
+const retryCount = ref(0)
+const MAX_RETRIES = 2
+
+const displaySrc = computed(() => {
+  if (retryCount.value === 0) return props.cover
+  const sep = props.cover.includes('?') ? '&' : '?'
+  return props.cover + sep + '_retry=' + retryCount.value + '_' + Date.now()
+})
+
+function onError() {
+  if (retryCount.value < MAX_RETRIES) {
+    retryCount.value++
+    imgFailed.value = false
+  } else {
+    imgFailed.value = true
+  }
+}
+
+function onRetry() {
+  if (retryCount.value < MAX_RETRIES) {
+    retryCount.value++
+    imgFailed.value = false
+  }
+}
 </script>
 
 <template>
@@ -16,14 +40,16 @@ const imgFailed = ref(false)
     <div class="category-card-img-wrap">
       <img
         v-if="!imgFailed"
-        :src="cover"
+        :key="retryCount"
+        :src="displaySrc"
         :alt="name"
         class="category-card-img"
-        loading="lazy"
         referrerpolicy="no-referrer"
-        @error="imgFailed = true"
+        @error="onError"
       />
-      <div v-else class="category-card-placeholder">加载失败</div>
+      <div v-else class="category-card-placeholder" @click.stop="onRetry">
+        加载失败 (点击重试)
+      </div>
     </div>
     <div class="category-card-overlay">
       <span class="category-card-name">{{ name }}</span>
@@ -94,5 +120,11 @@ const imgFailed = ref(false)
   justify-content: center;
   color: rgba(255, 255, 255, 0.3);
   font-size: 13px;
+  cursor: pointer;
+  background: #111;
+}
+.category-card-placeholder:hover {
+  color: rgba(255, 255, 255, 0.6);
+  background: #1a1a1a;
 }
 </style>
