@@ -10,28 +10,34 @@ const props = defineProps({
 const emit = defineEmits(['click'])
 const imgFailed = ref(false)
 const retryCount = ref(0)
-const MAX_RETRIES = 2
+const MAX_RETRIES = 3
+const retryTimer = ref(null)
 
 const displaySrc = computed(() => {
+  if (!props.cover) return ''
   if (retryCount.value === 0) return props.cover
   const sep = props.cover.includes('?') ? '&' : '?'
   return props.cover + sep + '_retry=' + retryCount.value + '_' + Date.now()
 })
 
 function onError() {
+  if (imgFailed.value) return
+  if (retryTimer.value) clearTimeout(retryTimer.value)
+  
   if (retryCount.value < MAX_RETRIES) {
     retryCount.value++
-    imgFailed.value = false
+    const delay = 600 * retryCount.value
+    retryTimer.value = setTimeout(() => {
+      if (!imgFailed.value) imgFailed.value = false
+    }, delay)
   } else {
     imgFailed.value = true
   }
 }
 
 function onRetry() {
-  if (retryCount.value < MAX_RETRIES) {
-    retryCount.value++
-    imgFailed.value = false
-  }
+  imgFailed.value = false
+  retryCount.value = 0
 }
 </script>
 
@@ -39,16 +45,15 @@ function onRetry() {
   <div class="category-card" @click="emit('click')">
     <div class="category-card-img-wrap">
       <img
-        v-if="!imgFailed"
+        v-if="!imgFailed && cover"
         :key="retryCount"
         :src="displaySrc"
         :alt="name"
         class="category-card-img"
-        referrerpolicy="no-referrer"
         @error="onError"
       />
       <div v-else class="category-card-placeholder" @click.stop="onRetry">
-        加载失败 (点击重试)
+        {{ retryCount < MAX_RETRIES ? '加载中...' : '加载失败 (点击重试)' }}
       </div>
     </div>
     <div class="category-card-overlay">

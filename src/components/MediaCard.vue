@@ -54,9 +54,11 @@ function onLoad(e) {
 
 function onError() {
   if (loaded.value || failed.value) return
+  if (retryTimer.value) clearTimeout(retryTimer.value)
+  
   if (retryCount.value < MAX_RETRIES) {
     retryCount.value++
-    const delay = 500 * retryCount.value
+    const delay = 600 * retryCount.value
     retryTimer.value = setTimeout(() => {
       if (!loaded.value && !failed.value) {
         const sep = baseCoverUrl.includes('?') ? '&' : '?'
@@ -80,7 +82,6 @@ function onError() {
         :alt="item.id"
         class="mc-real"
         loading="lazy"
-        referrerpolicy="no-referrer"
         @load="onLoad"
         @error="onError"
       />

@@ -1,7 +1,19 @@
-- name: "lh"
+- name: "lh5"
   cover: "https://imglf5.lf127.net/img/{{id}}.jpg?imageView&thumbnail=811x0"
   display: "https://imglf5.lf127.net/img/{{id}}.jpg"
   raw: "https://imglf5.lf127.net/img/{{id}}.jpg"
+  download: "js"
+
+- name: "lh6"
+  cover: "https://imglf6.lf127.net/img/{{id}}.jpg?imageView&thumbnail=811x0"
+  display: "https://imglf6.lf127.net/img/{{id}}.jpg"
+  raw: "https://imglf6.lf127.net/img/{{id}}.jpg"
+  download: "js"
+
+- name: "dt"
+  cover: "https://c-ssl.dtstatic.com/uploads/blog/{{id}}.thumb.800_0.jpeg_webp"
+  display: "https://c-ssl.duitang.com/uploads/blog/{{id}}.jpeg_webp"
+  raw: "https://c-ssl.duitang.com/uploads/blog/{{id}}.jpeg"
   download: "js"
 
 - name: "xxt"

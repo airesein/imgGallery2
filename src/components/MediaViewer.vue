@@ -13,11 +13,42 @@ const getItemDownload = inject('getItemDownload')
 const isVideo = computed(() => isVideoFn(props.item))
 const favored = computed(() => isFav(props.item))
 const fullLoaded = ref(false)
+const displayFailed = ref(false)
+const retryCount = ref(0)
+const MAX_RETRIES = 3
+const retryTimer = ref(null)
+
 const coverUrl = computed(() => getItemUrl(props.item, 'cover'))
-const displayUrl = computed(() => getItemUrl(props.item, 'display'))
+const displayUrl = computed(() => {
+  const base = getItemUrl(props.item, 'display')
+  if (retryCount.value === 0) return base
+  const sep = base.includes('?') ? '&' : '?'
+  return base + sep + '_retry=' + retryCount.value + '_' + Date.now()
+})
 const rawUrl = computed(() => getItemUrl(props.item, 'raw'))
 
-watch(() => props.item, () => { fullLoaded.value = false })
+watch(() => props.item, () => {
+  fullLoaded.value = false
+  displayFailed.value = false
+  retryCount.value = 0
+  if (retryTimer.value) clearTimeout(retryTimer.value)
+})
+
+function onDisplayError() {
+  if (displayFailed.value) return
+  if (retryTimer.value) clearTimeout(retryTimer.value)
+  
+  if (retryCount.value < MAX_RETRIES) {
+    retryCount.value++
+    const delay = 800 * retryCount.value
+    retryTimer.value = setTimeout(() => {
+      if (!displayFailed.value) displayFailed.value = false
+    }, delay)
+  } else {
+    displayFailed.value = true
+    fullLoaded.value = true
+  }
+}
 
 function download() {
   const dlType = getItemDownload(props.item)
@@ -60,18 +91,24 @@ function onBackdrop() {
     <div class="vw-stage">
       <template v-if="!isVideo">
         <img
+          v-if="!displayFailed"
           :src="coverUrl"
           :class="['vw-media', 'vw-cover', { hidden: fullLoaded }]"
           alt=""
-          referrerpolicy="no-referrer"
         />
         <img
+          v-if="!displayFailed"
+          :key="retryCount"
           :src="displayUrl"
           :class="['vw-media', 'vw-full', { loaded: fullLoaded }]"
           alt=""
-          referrerpolicy="no-referrer"
           @load="fullLoaded = true"
+          @error="onDisplayError"
         />
+        <div v-else class="vw-error">
+          <div>预览加载失败</div>
+          <button class="vw-btn" @click.stop="download">直接下载查看</button>
+        </div>
       </template>
       <video v-else :src="displayUrl" class="vw-media" controls autoplay @click.stop />
 
@@ -128,6 +165,13 @@ function onBackdrop() {
 }
 
 .vw-full.loaded { opacity: 1; }
+
+.vw-error {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 16px;
+  color: rgba(255,255,255,0.5); font-size: 14px;
+}
 
 .vw-actions {
   position: absolute;

@@ -101,13 +101,11 @@ onUnmounted(() => {
       <img
         :src="coverUrl"
         :class="['fs-media', displayMode, 'fs-cover', { hidden: fullLoaded }]"
-        referrerpolicy="no-referrer"
         alt=""
       />
       <img
         :src="displayUrl"
         :class="['fs-media', displayMode, 'fs-full', { loaded: fullLoaded }]"
-        referrerpolicy="no-referrer"
         alt=""
         @load="fullLoaded = true"
       />
