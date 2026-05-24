@@ -1,9 +1,10 @@
 <script setup>
-import { ref, computed, inject, watch, nextTick, onMounted, onUnmounted } from 'vue'
+import { ref, computed, inject, watch, nextTick, onMounted, onUnmounted, onActivated, onDeactivated } from 'vue'
 import MediaCard from '../components/MediaCard.vue'
 import MediaViewer from '../components/MediaViewer.vue'
 import FullscreenViewer from '../components/FullscreenViewer.vue'
 import { useFavorites } from '../composables/useFavorites.js'
+import { useSwCache } from '../composables/useSwCache.js'
 import { downloadItemsAsZip } from '../utils/batchDownload.js'
 
 const uiState = inject('uiState')
@@ -12,6 +13,7 @@ const settings = inject('settings')
 const getItemUrl = inject('getItemUrl')
 
 const { favorites, remove } = useFavorites()
+const sw = useSwCache()
 
 const BATCH = 30
 const loadedCount = ref(BATCH)
@@ -58,6 +60,7 @@ const selectedIndex = computed(() => {
 watch(allItems, (items) => {
   uiState.currentCategory = '收藏'
   uiState.currentCount = items.length
+  syncFavoritesPriority()
 }, { immediate: true })
 
 watch(selectedItems, (items) => {
@@ -70,6 +73,23 @@ watch(() => uiState.selectionMode, (enabled) => {
 
 function getItemKey(item) {
   return `${item.source}:${item.id}`
+}
+
+function getItemUrls(item) {
+  return [getItemUrl(item, 'cover'), getItemUrl(item, 'display')].filter(Boolean)
+}
+
+function syncFavoritesPriority() {
+  const covers = []
+  const displays = []
+  for (const item of favorites.value) {
+    const c = getItemUrl(item, 'cover')
+    const d = getItemUrl(item, 'display')
+    if (c) covers.push(c)
+    if (d) displays.push(d)
+  }
+  sw.setPriority(covers, 2)
+  sw.setPriority(displays, 3)
 }
 
 function getColumnCount() {
@@ -135,7 +155,12 @@ function clearSelection() {
 
 function batchFavorite() {
   if (!selectedItems.value.length) return
+  const removedUrls = []
+  for (const item of selectedItems.value) {
+    removedUrls.push(...getItemUrls(item))
+  }
   selectedItems.value.forEach(remove)
+  sw.removePriority(removedUrls)
   clearSelection()
 }
 
@@ -192,11 +217,35 @@ function openFS(idx) {
   fsIndex.value = idx >= 0 ? idx : 0
 }
 
+function setupSentinel() {
+  if (sentinelObserver) {
+    sentinelObserver.disconnect()
+    sentinelObserver = null
+  }
+  observeSentinel()
+}
+
 onMounted(() => {
   loadedCount.value = BATCH
   bindUiActions()
-  observeSentinel()
+  setupSentinel()
   window.addEventListener('resize', onResize, { passive: true })
+})
+
+onActivated(() => {
+  bindUiActions()
+  setupSentinel()
+  window.addEventListener('resize', onResize, { passive: true })
+})
+
+onDeactivated(() => {
+  sentinelObserver?.disconnect()
+  sentinelObserver = null
+  window.removeEventListener('resize', onResize)
+  clearTimeout(resizeTimer)
+  resetUiActions()
+  uiState.selectionMode = false
+  uiState.selectedCount = 0
 })
 
 onUnmounted(() => {
@@ -240,7 +289,7 @@ onUnmounted(() => {
 
 <style scoped>
 .fv { padding: 68px 8px 48px; max-width: 1600px; margin: 0 auto; }
-.fv-empty { text-align: center; padding: 80px 20px; color: rgba(255,255,255,0.35); font-size: 15px; }
+.fv-empty { text-align: center; padding: 80px 20px; color: rgba(30,32,34,0.2); font-size: 15px; }
 .masonry {
   display: grid;
 }
@@ -254,12 +303,12 @@ onUnmounted(() => {
   padding: 4px 0 14px;
 }
 .fv-loading {
-  color: rgba(255,255,255,0.45);
+  color: var(--color-loading-text);
   font-size: 14px;
   animation: pulse 1.2s ease-in-out infinite;
 }
-.fv-hint { color: rgba(255,255,255,0.16); font-size: 12px; letter-spacing: 0.06em; }
-.fv-end { color: rgba(255,255,255,0.12); font-size: 12px; letter-spacing: 0.1em; }
+.fv-hint { color: rgba(30,32,34,0.12); font-size: 12px; letter-spacing: 0.06em; }
+.fv-end { color: rgba(30,32,34,0.08); font-size: 12px; letter-spacing: 0.1em; }
 
 @keyframes pulse {
   0%, 100% { opacity: 0.4; }

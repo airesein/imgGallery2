@@ -1,9 +1,10 @@
 <script setup>
-import { ref, computed, inject, watch, nextTick, onMounted, onUnmounted } from 'vue'
+import { ref, computed, inject, watch, nextTick, onMounted, onUnmounted, onActivated, onDeactivated } from 'vue'
 import MediaCard from '../components/MediaCard.vue'
 import MediaViewer from '../components/MediaViewer.vue'
 import FullscreenViewer from '../components/FullscreenViewer.vue'
 import { useFavorites } from '../composables/useFavorites.js'
+import { useSwCache } from '../composables/useSwCache.js'
 import { downloadItemsAsZip } from '../utils/batchDownload.js'
 
 const props = defineProps({ name: String })
@@ -25,12 +26,48 @@ const sentinelRef = ref(null)
 const selectedKeys = ref(new Set())
 
 const { add } = useFavorites()
+const sw = useSwCache()
 
 let sentinelObserver = null
 let resizeTimer = null
+const originalTitle = document.title
+
+function setMeta(name, content) {
+  let el = document.querySelector(`meta[name="${name}"]`)
+  if (!el) {
+    el = document.createElement('meta')
+    el.setAttribute('name', name)
+    document.head.appendChild(el)
+  }
+  el.setAttribute('content', content)
+}
+
+function setOg(prop, content) {
+  let el = document.querySelector(`meta[property="${prop}"]`)
+  if (!el) {
+    el = document.createElement('meta')
+    el.setAttribute('property', prop)
+    document.head.appendChild(el)
+  }
+  el.setAttribute('content', content)
+}
+
+watch(() => props.name, (name) => {
+  if (!name) return
+  const title = `${name}壁纸「Ziworld」`
+  const desc = `${name}精美 4K 壁纸，二次元小窝「Ziworld」`
+  document.title = title
+  setMeta('description', desc)
+  setOg('og:title', title)
+  setOg('og:description', desc)
+}, { immediate: true })
 
 const category = computed(() => catalog.value.categories.find(c => c.name === props.name) || null)
 const allItems = computed(() => category.value ? flattenCategory(category.value) : [])
+const descriptionParagraphs = computed(() => {
+  if (!category.value?.description) return []
+  return category.value.description.split(/\n\n+/).filter(p => p.trim())
+})
 const visibleItems = computed(() => allItems.value.slice(0, loadedCount.value))
 const hasMore = computed(() => loadedCount.value < allItems.value.length)
 const columnCount = ref(getColumnCount())
@@ -71,6 +108,17 @@ watch(selectedItems, (items) => {
 
 watch(() => uiState.selectionMode, (enabled) => {
   if (!enabled) selectedKeys.value = new Set()
+})
+
+watch(visibleItems, (items) => {
+  const covers = items.map(i => getItemUrl(i, 'cover')).filter(Boolean)
+  sw.setPriority(covers, 4)
+})
+
+watch(selectedItem, (item) => {
+  if (!item) return
+  const url = getItemUrl(item, 'display')
+  if (url) sw.setPriority([url], 5)
 })
 
 function getItemKey(item) {
@@ -215,10 +263,34 @@ function openFS(idx) {
   fsIndex.value = idx >= 0 ? idx : 0
 }
 
+function setupSentinel() {
+  if (sentinelObserver) {
+    sentinelObserver.disconnect()
+    sentinelObserver = null
+  }
+  observeSentinel()
+}
+
 onMounted(() => {
   bindUiActions()
-  observeSentinel()
+  setupSentinel()
   window.addEventListener('resize', onResize, { passive: true })
+})
+
+onActivated(() => {
+  bindUiActions()
+  setupSentinel()
+  window.addEventListener('resize', onResize, { passive: true })
+})
+
+onDeactivated(() => {
+  sentinelObserver?.disconnect()
+  sentinelObserver = null
+  window.removeEventListener('resize', onResize)
+  clearTimeout(resizeTimer)
+  resetUiActions()
+  uiState.selectionMode = false
+  uiState.selectedCount = 0
 })
 
 onUnmounted(() => {
@@ -228,6 +300,7 @@ onUnmounted(() => {
   resetUiActions()
   uiState.selectionMode = false
   uiState.selectedCount = 0
+  document.title = originalTitle
 })
 </script>
 
@@ -236,10 +309,14 @@ onUnmounted(() => {
     <div v-if="!category" class="cp-empty">分类不存在</div>
     <template v-else>
       <div v-if="category.description" class="cp-desc">
-        <img v-if="allItems.length > 0" :src="getItemUrl(allItems[0], 'cover')" class="cp-desc-bg" alt="" referrerpolicy="no-referrer" />
         <div class="cp-desc-inner">
           <div class="cp-desc-label">README</div>
-          <div class="cp-desc-text">{{ category.description }}</div>
+          <div class="cp-desc-text">
+            <p v-for="(para, i) in descriptionParagraphs" :key="i"
+               :class="{ 'cp-desc-attribution': i === descriptionParagraphs.length - 1 }">
+              {{ para }}
+            </p>
+          </div>
         </div>
       </div>
 
@@ -282,48 +359,37 @@ onUnmounted(() => {
 <style scoped>
 .cp { padding: 68px 8px 40px; max-width: 1600px; margin: 0 auto; }
 .cp-desc {
-  position: relative;
   margin: 0 0 16px;
-  overflow: hidden;
-  border-radius: 16px;
-  border: 1px solid rgba(255,255,255,0.085);
-  box-shadow: 0 12px 34px rgba(0,0,0,0.22);
-}
-.cp-desc-bg {
-  position: absolute; inset: 0;
-  width: 100%; height: 100%; object-fit: cover;
-  filter: blur(32px) saturate(0.7);
-  transform: scale(1.15);
-  opacity: 0.35;
-  pointer-events: none;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  border-left: 3px solid rgba(179,142,109,0.25);
 }
 .cp-desc-inner {
-  position: relative;
-  padding: 18px 18px 18px 22px;
-  background: linear-gradient(180deg, rgba(10,10,10,0.68), rgba(10,10,10,0.82));
+  padding: 16px 20px;
 }
 .cp-desc-label {
-  margin-bottom: 10px;
-  color: rgba(255,255,255,0.85);
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  font-weight: 700;
-  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 8px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  font-weight: 600;
+  text-transform: uppercase;
 }
-.cp-desc-label::before {
-  content: '';
-  width: 14px; height: 2px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, #70a4ff, #d4b0ff);
+.cp-desc-text p {
+  margin: 0 0 0.3em;
+  line-height: 1.5;
+  color: var(--text-body);
 }
-.cp-desc-text {
-  max-width: 960px;
-  color: rgba(255,255,255,0.62);
-  font-size: 13px;
-  line-height: 1.95;
-  white-space: pre-wrap;
+.cp-desc-text p:last-child {
+  margin-bottom: 0;
 }
-.cp-empty { text-align: center; padding: 80px 20px; color: rgba(255,255,255,0.35); font-size: 15px; }
+.cp-desc-attribution {
+  text-align: right;
+  color: var(--text-secondary);
+  margin-top: 0.5em;
+}
+.cp-empty { text-align: center; padding: 80px 20px; color: rgba(30,32,34,0.2); font-size: 15px; }
 
 .masonry {
   display: grid;
@@ -340,19 +406,19 @@ onUnmounted(() => {
 }
 
 .cp-loading {
-  color: rgba(255,255,255,0.45);
+  color: var(--color-loading-text);
   font-size: 14px;
   animation: pulse 1.2s ease-in-out infinite;
 }
 
 .cp-hint {
-  color: rgba(255,255,255,0.16);
+  color: rgba(30,32,34,0.12);
   font-size: 12px;
   letter-spacing: 0.06em;
 }
 
 .cp-end {
-  color: rgba(255,255,255,0.12);
+  color: rgba(30,32,34,0.08);
   font-size: 12px;
   letter-spacing: 0.1em;
 }

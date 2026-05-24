@@ -1,6 +1,7 @@
 <script setup>
-import { computed, ref, watch, inject } from 'vue'
+import { computed, ref, watch, inject, onUnmounted } from 'vue'
 import { useFavorites } from '../composables/useFavorites.js'
+import { useSwCache } from '../composables/useSwCache.js'
 
 const props = defineProps({ item: Object })
 const emit = defineEmits(['close', 'fullscreen'])
@@ -9,6 +10,7 @@ const { isFav, toggle } = useFavorites()
 const getItemUrl = inject('getItemUrl')
 const isVideoFn = inject('isVideo')
 const getItemDownload = inject('getItemDownload')
+const sw = useSwCache()
 
 const isVideo = computed(() => isVideoFn(props.item))
 const favored = computed(() => isFav(props.item))
@@ -17,6 +19,8 @@ const displayFailed = ref(false)
 const retryCount = ref(0)
 const MAX_RETRIES = 3
 const retryTimer = ref(null)
+const displayProgress = ref(0)
+let progressTimer = null
 
 const coverUrl = computed(() => getItemUrl(props.item, 'cover'))
 const displayUrl = computed(() => {
@@ -27,10 +31,52 @@ const displayUrl = computed(() => {
 })
 const rawUrl = computed(() => getItemUrl(props.item, 'raw'))
 
+function startProgress() {
+  clearProgress()
+  displayProgress.value = 0
+  function tick() {
+    if (displayProgress.value >= 90) return
+    const inc = Math.max(1, (90 - displayProgress.value) * 0.12 + Math.random() * 3)
+    displayProgress.value = Math.min(90, displayProgress.value + inc)
+    progressTimer = setTimeout(tick, 150 + Math.random() * 200)
+  }
+  progressTimer = setTimeout(tick, 80)
+}
+
+function clearProgress() {
+  if (progressTimer) {
+    clearTimeout(progressTimer)
+    progressTimer = null
+  }
+}
+
+function finishProgress() {
+  clearProgress()
+  displayProgress.value = 100
+  setTimeout(() => {
+    if (displayProgress.value === 100) displayProgress.value = 0
+  }, 400)
+}
+
+function onDisplayLoad() {
+  finishProgress()
+  fullLoaded.value = true
+}
+
 watch(() => props.item, () => {
   fullLoaded.value = false
   displayFailed.value = false
   retryCount.value = 0
+  if (retryTimer.value) clearTimeout(retryTimer.value)
+  startProgress()
+  const dl = displayUrl.value
+  const raw = rawUrl.value
+  const urls = [dl, raw].filter(Boolean)
+  if (urls.length) sw.setPriority(urls, 5)
+}, { immediate: true })
+
+onUnmounted(() => {
+  clearProgress()
   if (retryTimer.value) clearTimeout(retryTimer.value)
 })
 
@@ -102,7 +148,7 @@ function onBackdrop() {
           :src="displayUrl"
           :class="['vw-media', 'vw-full', { loaded: fullLoaded }]"
           alt=""
-          @load="fullLoaded = true"
+          @load="onDisplayLoad"
           @error="onDisplayError"
         />
         <div v-else class="vw-error">
@@ -111,6 +157,10 @@ function onBackdrop() {
         </div>
       </template>
       <video v-else :src="displayUrl" class="vw-media" controls autoplay @click.stop />
+
+      <div v-if="displayProgress > 0 && displayProgress < 100" class="vw-progress">
+        <div class="vw-progress-bar" :style="{ width: displayProgress + '%' }"></div>
+      </div>
 
       <div class="vw-actions" @click.stop>
         <button class="vw-btn" @click="download">下载</button>
@@ -170,7 +220,26 @@ function onBackdrop() {
   position: absolute; inset: 0;
   display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: 16px;
-  color: rgba(255,255,255,0.5); font-size: 14px;
+  color: var(--color-loading-text); font-size: 14px;
+}
+
+.vw-progress {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 52px;
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(0,0,0,0.3);
+  overflow: hidden;
+  z-index: 5;
+}
+
+.vw-progress-bar {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--color-accent);
+  transition: width 0.25s ease-out;
 }
 
 .vw-actions {
@@ -184,9 +253,9 @@ function onBackdrop() {
 }
 
 .vw-btn {
-  background: rgba(10,10,10,0.55);
-  border: 1px solid rgba(255,255,255,0.12);
-  color: #e6e6e6;
+  background: var(--bg-overlay);
+  border: 1px solid rgba(30,32,34,0.08);
+  color: var(--text-body);
   padding: 8px 16px;
   border-radius: 999px;
   font-size: 13px;
@@ -195,8 +264,8 @@ function onBackdrop() {
   -webkit-backdrop-filter: blur(12px);
 }
 
-.vw-btn:hover { background: rgba(24,24,24,0.72); color: #fff; }
-.vw-btn.active { color: #f0c040; border-color: rgba(240,192,64,0.4); }
+.vw-btn:hover { background: rgba(252,251,250,0.85); color: var(--text-primary); }
+.vw-btn.active { color: var(--color-accent); border-color: var(--border-active); }
 
 @media (max-width: 600px) {
   .vw-actions { left: 10px; right: 10px; bottom: 10px; }

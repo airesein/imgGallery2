@@ -101,21 +101,24 @@ function onError() {
   break-inside: avoid;
   margin-bottom: 10px;
   cursor: pointer;
-  border-radius: 14px;
+  border-radius: 8px;
   overflow: hidden;
-  background: #161616;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.25);
-  transition: transform 0.25s, box-shadow 0.25s;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  box-shadow: inset 0 0 0 1px rgba(30,32,34,0.03), 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .mc.selectable {
-  box-shadow: 0 0 0 1px rgba(255,255,255,0.06), 0 2px 12px rgba(0,0,0,0.25);
+  border-color: var(--border-subtle);
 }
 .mc.selected {
-  box-shadow: 0 0 0 2px rgba(112,164,255,0.8), 0 8px 24px rgba(0,0,0,0.32);
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 1px var(--color-accent), 0 8px 24px rgba(0, 0, 0, 0.1);
 }
 .mc:hover {
-  transform: translateY(-3px) scale(1.012);
-  box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+  transform: scale(1.015);
+  border-color: rgba(30, 32, 34, 0.12);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
 }
 
 .mc-img {
@@ -128,7 +131,7 @@ function onError() {
   position: relative;
   width: 100%;
   height: 220px;
-  background: linear-gradient(110deg, #1a1a1a 30%, #222 50%, #1a1a1a 70%);
+  background: linear-gradient(110deg, #ece9e4 30%, #e4e0da 50%, #ece9e4 70%);
   background-size: 250% 100%;
   animation: shimmer 1.6s ease-in-out infinite;
 }
@@ -173,9 +176,9 @@ function onError() {
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: rgba(12,12,12,0.72);
-  border: 1px solid rgba(255,255,255,0.16);
-  color: #fff;
+  background: rgba(255,255,255,0.85);
+  border: 1px solid rgba(30,32,34,0.1);
+  color: var(--text-primary);
   font-size: 13px;
   font-weight: 700;
 }
@@ -183,6 +186,6 @@ function onError() {
 .mc-fail {
   width: 100%; min-height: 220px;
   display: flex; align-items: center; justify-content: center;
-  color: rgba(255,255,255,0.25); font-size: 13px;
+  color: rgba(30,32,34,0.18); font-size: 13px;
 }
 </style>

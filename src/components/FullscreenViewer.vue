@@ -169,14 +169,14 @@ onUnmounted(() => {
 }
 
 .fs-btn {
-  background: rgba(255,255,255,0.12);
-  border: 1px solid rgba(255,255,255,0.2);
-  color: #fff;
+  background: rgba(30,32,34,0.08);
+  border: 1px solid rgba(30,32,34,0.12);
+  color: var(--text-body);
   padding: 8px 14px;
   border-radius: 999px;
   font-size: 13px;
   cursor: pointer;
 }
 
-.fs-btn:hover { background: rgba(255,255,255,0.2); }
+.fs-btn:hover { background: rgba(30,32,34,0.12); }
 </style>

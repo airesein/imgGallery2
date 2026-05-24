@@ -3,6 +3,7 @@ import { ref, reactive, provide, onMounted, computed } from 'vue'
 import FloatingNav from './components/FloatingNav.vue'
 import { useSettings } from './composables/useSettings.js'
 import { useCatalog } from './composables/useCatalog.js'
+import { useSwCache } from './composables/useSwCache.js'
 
 const { catalog, rules, getItemUrl, getItemType, getItemDownload, isVideo, flattenCategory } = useCatalog()
 const loading = ref(true)
@@ -34,6 +35,9 @@ const uiActions = reactive({
 })
 
 const { settings, set, reset } = useSettings()
+const sw = useSwCache()
+
+const showSettings = ref(false)
 
 provide('catalog', catalog)
 provide('uiState', uiState)
@@ -47,6 +51,7 @@ provide('getItemDownload', getItemDownload)
 provide('isVideo', isVideo)
 provide('flattenCategory', flattenCategory)
 provide('categoryCovers', categoryCovers)
+provide('showSettings', showSettings)
 
 function setMeta(name, content) {
   if (!content) return
@@ -116,6 +121,8 @@ onMounted(async () => {
   } catch (e) {
     console.error('Failed to load site config', e)
   }
+
+  sw.init()
 })
 </script>
 
