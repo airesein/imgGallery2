@@ -132,7 +132,10 @@ self.addEventListener('message', (e) => {
   switch (msg.type) {
     case 'init': {
       isEnabled = msg.enabled !== false
-      e.source.postMessage({ type: 'init-ack' })
+      ;(async () => {
+        await buildMetaFromCache()
+        e.source.postMessage({ type: 'init-ack' })
+      })()
       break
     }
     case 'set-enabled': {

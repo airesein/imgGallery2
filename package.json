@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "generate": "node scripts/generate-catalog.mjs",
+    "generate": "node scripts/generate-catalog.mjs && node scripts/generate-sitemap.mjs",
     "dev": "npm run generate && vite",
     "build": "npm run generate && vite build",
     "preview": "vite preview"
