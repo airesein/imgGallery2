@@ -52,11 +52,11 @@ onUnmounted(closeStats)
             <input type="range" class="settings-range" min="6" max="20" :value="settings.cardGap" @input="setSetting('cardGap', Number($event.target.value))" />
           </div>
           <div class="settings-row">
-            <label class="settings-label">Columns <span class="settings-value">{{ settings.columns === 0 ? 'Auto' : settings.columns }}</span></label>
+            <label class="settings-label">Columns <span class="settings-value">{{ settings.columns || 'Auto' }}</span></label>
             <input type="range" class="settings-range" min="0" max="6" :value="settings.columns" @input="setSetting('columns', Number($event.target.value))" />
           </div>
           <div class="settings-row">
-            <button class="settings-reset" @click="resetSettings">Reset Defaults</button>
+            <button class="settings-btn" @click="resetSettings">Reset Defaults</button>
           </div>
 
           <div class="settings-divider"></div>
@@ -208,6 +208,24 @@ onUnmounted(closeStats)
   transition: background 0.2s, color 0.2s, border-color 0.2s;
 }
 .settings-reset:hover {
+  background: rgba(179,142,109,0.06);
+  color: var(--text-primary);
+  border-color: rgba(179,142,109,0.15);
+}
+
+.settings-btn {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(30,32,34,0.08);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+.settings-btn:hover {
   background: rgba(179,142,109,0.06);
   color: var(--text-primary);
   border-color: rgba(179,142,109,0.15);

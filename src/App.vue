@@ -1,5 +1,6 @@
 <script setup>
 import { ref, reactive, provide, onMounted, computed } from 'vue'
+import yaml from 'js-yaml'
 import FloatingNav from './components/FloatingNav.vue'
 import { useSettings } from './composables/useSettings.js'
 import { useCatalog } from './composables/useCatalog.js'
@@ -34,10 +35,21 @@ const uiActions = reactive({
   batchDownload: async () => {},
 })
 
-const { settings, set, reset } = useSettings()
+const { settings, set, reset, saveAsDefaults, applySiteDefaults } = useSettings()
 const sw = useSwCache()
 
 const showSettings = ref(false)
+
+const siteConfig = reactive({
+  name: 'Ziworld',
+  url: '',
+  description: '',
+  keywords: '',
+  favicon: '/favicon.ico',
+  meta: { title: '', description: '', ogImage: '' },
+  github: { show: false, url: '' },
+})
+provide('siteConfig', siteConfig)
 
 provide('catalog', catalog)
 provide('uiState', uiState)
@@ -45,6 +57,7 @@ provide('uiActions', uiActions)
 provide('settings', settings)
 provide('setSetting', set)
 provide('resetSettings', reset)
+provide('saveAsDefaults', saveAsDefaults)
 provide('getItemUrl', getItemUrl)
 provide('getItemType', getItemType)
 provide('getItemDownload', getItemDownload)
@@ -101,22 +114,25 @@ onMounted(async () => {
   }
 
   try {
-    const cfgRes = await fetch('/site-config.json')
+    const cfgRes = await fetch('/config.yml')
     if (cfgRes.ok) {
-      const cfg = await cfgRes.json()
-      if (cfg.name) {
-        document.title = cfg.name
-        setProperty('og:title', cfg.name)
-        setMeta('twitter:title', cfg.name)
+      const cfg = yaml.load(await cfgRes.text())
+      Object.assign(siteConfig, cfg)
+      const meta = siteConfig.meta || {}
+      if (meta.title) {
+        document.title = meta.title
+        setProperty('og:title', meta.title)
+        setMeta('twitter:title', meta.title)
       }
-      if (cfg.description) {
-        setMeta('description', cfg.description)
-        setProperty('og:description', cfg.description)
-        setMeta('twitter:description', cfg.description)
+      if (meta.description) {
+        setMeta('description', meta.description)
+        setProperty('og:description', meta.description)
+        setMeta('twitter:description', meta.description)
       }
-      if (cfg.keywords) setMeta('keywords', cfg.keywords)
-      if (cfg.ogImage) setProperty('og:image', cfg.ogImage)
-      if (cfg.favicon) setFavicon(cfg.favicon)
+      if (siteConfig.keywords) setMeta('keywords', siteConfig.keywords)
+      if (meta.ogImage) setProperty('og:image', meta.ogImage)
+      if (siteConfig.favicon) setFavicon(siteConfig.favicon)
+      if (cfg.settings) applySiteDefaults(cfg.settings)
     }
   } catch (e) {
     console.error('Failed to load site config', e)

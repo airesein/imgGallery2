@@ -1,0 +1,22 @@
+# 站点配置
+name: "Ziworld"
+url: "https://gallery.ziworld.top"
+description: "我的图库"
+keywords: "ziworld, images, 壁纸"
+favicon: "/favicon.ico"
+
+# Meta 标签（留空则自动用 name/description）
+meta:
+  title: "Ziworld"
+  description: "我的图库"
+  ogImage: ""
+
+# 设置默认值（首次访问时生效）
+settings:
+  defaultCardGap: 10
+  defaultColumns: 0
+
+# GitHub 图标（主页搜索栏右侧显示）
+github:
+  show: true
+  url: "https://github.com/airesein/imgGallery2"

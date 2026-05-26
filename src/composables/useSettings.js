@@ -1,29 +1,30 @@
 import { ref, watch } from 'vue'
 
 const STORAGE_KEY = 'gallery-settings'
-const defaults = {
-  cardGap: 10,
-  columns: 0,
+const USER_DEFAULTS_KEY = 'gallery-user-defaults'
+
+const baseDefaults = { cardGap: 10, columns: 0 }
+let defaults = { ...baseDefaults }
+
+function loadUserDefaults() {
+  try {
+    const raw = localStorage.getItem(USER_DEFAULTS_KEY)
+    return raw ? JSON.parse(raw) : null
+  } catch { return null }
 }
 
 function loadSettings() {
+  const userDefs = loadUserDefaults() || {}
+  const merged = { ...defaults, ...userDefs }
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return { ...defaults }
-    const parsed = JSON.parse(raw)
-    return {
-      cardGap: typeof parsed.cardGap === 'number' ? parsed.cardGap : defaults.cardGap,
-      columns: typeof parsed.columns === 'number' ? parsed.columns : defaults.columns,
-    }
-  } catch {
-    return { ...defaults }
-  }
+    if (!raw) return { ...merged }
+    return { ...merged, ...JSON.parse(raw) }
+  } catch { return { ...merged } }
 }
 
 function saveSettings(s) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(s))
-  } catch {}
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)) } catch {}
 }
 
 const settings = ref(loadSettings())
@@ -38,30 +39,29 @@ function reset() {
   saveSettings(settings.value)
 }
 
+function saveAsDefaults() {
+  const toSave = { cardGap: settings.value.cardGap, columns: settings.value.columns }
+  localStorage.setItem(USER_DEFAULTS_KEY, JSON.stringify(toSave))
+}
+
+function applySiteDefaults(cfg) {
+  if (cfg.defaultCardGap !== undefined) defaults.cardGap = cfg.defaultCardGap
+  if (cfg.defaultColumns !== undefined) defaults.columns = cfg.defaultColumns
+  settings.value = loadSettings()
+}
+
 watch(
   () => settings.value.cardGap,
-  (gap) => {
-    document.documentElement.style.setProperty('--card-gap', `${gap}px`)
-  },
+  (gap) => { document.documentElement.style.setProperty('--card-gap', `${gap}px`) },
   { immediate: true }
 )
 
 watch(
   () => settings.value.columns,
-  (cols) => {
-    document.documentElement.style.setProperty('--column-count', cols > 0 ? cols : 'auto')
-  },
+  (cols) => { document.documentElement.style.setProperty('--column-count', cols > 0 ? cols : 'auto') },
   { immediate: true }
 )
 
 export function useSettings() {
-  return { settings, set, reset, defaults }
-}
-
-export function getColumnCount() {
-  const width = window.innerWidth
-  if (width <= 560) return 1
-  if (width <= 900) return 2
-  if (width <= 1400) return 3
-  return 4
+  return { settings, set, reset, saveAsDefaults, applySiteDefaults, defaults }
 }
