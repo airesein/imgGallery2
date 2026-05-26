@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(del *)",
-      "Bash(npm run *)"
-    ]
-  },
-  "$version": 4
-}
