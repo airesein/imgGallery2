@@ -2,16 +2,14 @@ import { readFileSync, writeFileSync, mkdirSync } from 'fs'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import yaml from 'js-yaml'
+import { generateCatalog } from './generate-catalog.mjs'
+import { generateSitemap } from './generate-sitemap.mjs'
 import { buildHomeMeta, buildCategoryMeta, buildFavoritesMeta } from '../src/utils/siteMeta.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const rootDir = join(__dirname, '..')
 const distDir = join(rootDir, 'dist')
 const publicDir = join(rootDir, 'public')
-
-const template = readFileSync(join(distDir, 'index.html'), 'utf-8')
-const siteConfig = yaml.load(readFileSync(join(publicDir, 'config.yml'), 'utf-8')) || {}
-const catalog = JSON.parse(readFileSync(join(publicDir, 'catalog.json'), 'utf-8'))
 
 function esc(value) {
   return String(value)
@@ -53,18 +51,55 @@ function withMeta(html, meta) {
   return next
 }
 
-function writeHtml(relativeDir, meta) {
+function writeHtml(template, relativeDir, meta) {
   const targetDir = join(distDir, relativeDir)
   mkdirSync(targetDir, { recursive: true })
   writeFileSync(join(targetDir, 'index.html'), withMeta(template, meta))
 }
 
-writeFileSync(join(distDir, 'index.html'), withMeta(template, buildHomeMeta(siteConfig)))
+export function ssgPlugin() {
+  return {
+    name: 'vite-plugin-ssg',
+    apply: 'build',
 
-for (const category of catalog.categories || []) {
-  writeHtml(join('category', category.name), buildCategoryMeta(siteConfig, category.name, category.cover))
+    buildStart() {
+      console.log('[ssg] Generating catalog and sitemap...')
+      generateCatalog()
+      generateSitemap()
+    },
+
+    writeBundle() {
+      console.log('[ssg] Generating static HTML pages...')
+
+      const template = readFileSync(join(distDir, 'index.html'), 'utf-8')
+
+      let siteConfig = {}
+      try {
+        siteConfig = yaml.load(readFileSync(join(publicDir, 'config.yml'), 'utf-8')) || {}
+      } catch (e) {
+        console.error('[ssg] Failed to load config.yml:', e.message)
+      }
+
+      let catalog = { categories: [] }
+      try {
+        catalog = JSON.parse(readFileSync(join(publicDir, 'catalog.json'), 'utf-8'))
+      } catch (e) {
+        console.error('[ssg] Failed to load catalog.json:', e.message)
+      }
+
+      // Home page
+      writeHtml(template, '.', buildHomeMeta(siteConfig))
+
+      // Category pages
+      for (const category of catalog.categories || []) {
+        writeHtml(template, join('category', category.name), buildCategoryMeta(siteConfig, category.name, category.cover))
+      }
+
+      // Favorites page
+      writeHtml(template, 'favorites', buildFavoritesMeta(siteConfig))
+
+      const pageCount = 1 + (catalog.categories?.length || 0) + 1
+      console.log(`[ssg] Generated ${pageCount} static HTML pages`)
+    },
+  }
 }
-
-writeHtml('favorites', buildFavoritesMeta(siteConfig))
-
-console.log(`Generated ${1 + (catalog.categories?.length || 0) + 1} static pages`)

@@ -10,7 +10,6 @@ const catalogPath = path.join(rootDir, 'public', 'catalog.json')
 const configPath = path.join(rootDir, 'public', 'config.yml')
 const sitemapPath = path.join(rootDir, 'public', 'sitemap.xml')
 
-// 确定站点 URL
 function resolveSiteUrl() {
   if (process.env.SITE_URL) return process.env.SITE_URL.replace(/\/+$/, '')
   try {
@@ -19,11 +18,10 @@ function resolveSiteUrl() {
       if (cfg.url) return cfg.url.replace(/\/+$/, '')
     }
   } catch {}
-  console.warn('Warning: SITE_URL not set. Set site-config.json "url" or SITE_URL env.')
+  console.warn('Warning: SITE_URL not set. Set config.yml "url" or SITE_URL env.')
   return 'https://example.com'
 }
 
-// 获取目录中所有数据文件的最新修改时间 (YYYY-MM-DD)
 function getCategoryLastmod(dirPath) {
   if (!fs.existsSync(dirPath)) return toDateStr(new Date())
   try {
@@ -54,55 +52,48 @@ function escapeXml(s) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;')
 }
 
-// 读取 catalog
-let categories = []
-try {
-  const catalog = JSON.parse(fs.readFileSync(catalogPath, 'utf-8'))
-  categories = catalog.categories || []
-} catch (e) {
-  console.error('Failed to read catalog.json, run "npm run generate" first')
-  process.exit(1)
-}
+export function generateSitemap() {
+  let categories = []
+  try {
+    const catalog = JSON.parse(fs.readFileSync(catalogPath, 'utf-8'))
+    categories = catalog.categories || []
+  } catch (e) {
+    console.error('Failed to read catalog.json, run catalog generation first')
+    return
+  }
 
-const SITE_URL = resolveSiteUrl()
+  const SITE_URL = resolveSiteUrl()
+  let globalLastmod = ''
 
-let globalLastmod = ''
+  const urls = []
 
-// 构建 URL 列表
-const urls = []
+  {
+    let homepageLatest = ''
+    for (const cat of categories) {
+      const catDir = path.join(dataDir, cat.name)
+      const lm = getCategoryLastmod(catDir)
+      if (lm > homepageLatest) homepageLatest = lm
+    }
+    globalLastmod = homepageLatest
+    urls.push({ loc: '/', lastmod: homepageLatest, priority: '1.0', changefreq: 'weekly' })
+  }
 
-// 首页：取所有分类中最新的修改时间
-{
-  let homepageLatest = ''
+  urls.push({ loc: '/favorites', lastmod: globalLastmod, priority: '0.3', changefreq: 'monthly' })
+
   for (const cat of categories) {
     const catDir = path.join(dataDir, cat.name)
-    const lm = getCategoryLastmod(catDir)
-    if (lm > homepageLatest) homepageLatest = lm
+    const lastmod = getCategoryLastmod(catDir)
+    urls.push({
+      loc: `/category/${encodeURIComponent(cat.name)}`,
+      lastmod,
+      priority: '0.8',
+      changefreq: 'weekly',
+    })
   }
-  globalLastmod = homepageLatest
-  urls.push({ loc: '/', lastmod: homepageLatest, priority: '1.0', changefreq: 'weekly' })
-}
 
-// 收藏页：取首页相同的 lastmod
-urls.push({ loc: '/favorites', lastmod: globalLastmod, priority: '0.3', changefreq: 'monthly' })
+  urls.sort((a, b) => a.loc.localeCompare(b.loc))
 
-// 分类页
-for (const cat of categories) {
-  const catDir = path.join(dataDir, cat.name)
-  const lastmod = getCategoryLastmod(catDir)
-  urls.push({
-    loc: `/category/${encodeURIComponent(cat.name)}`,
-    lastmod,
-    priority: '0.8',
-    changefreq: 'weekly',
-  })
-}
-
-// 按路径排序
-urls.sort((a, b) => a.loc.localeCompare(b.loc))
-
-// 生成 XML
-const xml = `<?xml version="1.0" encoding="UTF-8"?>
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${urls.map(u => `  <url>
     <loc>${SITE_URL}${escapeXml(u.loc)}</loc>
@@ -113,5 +104,12 @@ ${urls.map(u => `  <url>
 </urlset>
 `
 
-fs.writeFileSync(sitemapPath, xml, 'utf-8')
-console.log(`Generated sitemap: ${urls.length} URLs, lastmod=${globalLastmod} (${sitemapPath})`)
+  fs.writeFileSync(sitemapPath, xml, 'utf-8')
+  console.log(`Generated sitemap: ${urls.length} URLs, lastmod=${globalLastmod}`)
+}
+
+const isMain = process.argv[1] &&
+  path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))
+if (isMain) {
+  generateSitemap()
+}

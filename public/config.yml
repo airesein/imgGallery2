@@ -1,7 +1,7 @@
 # 站点配置
 name: "Ziworld"
 url: "https://gallery.ziworld.top"
-description: "我的图库"
+description: "没有什么是完美的，这个世界并不完美，所以才显得美丽。"
 keywords: "ziworld, images, 壁纸"
 favicon: "/favicon.ico"
 
@@ -11,7 +11,7 @@ meta:
   description: "我的图库"
   ogImage: ""
 
-# 设置默认值（首次访问时生效）
+# 设置默认值
 settings:
   defaultCardGap: 10
   defaultColumns: 0
