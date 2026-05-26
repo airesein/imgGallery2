@@ -6,6 +6,7 @@ import FullscreenViewer from '../components/FullscreenViewer.vue'
 import { useFavorites } from '../composables/useFavorites.js'
 import { useSwCache } from '../composables/useSwCache.js'
 import { downloadItemsAsZip } from '../utils/batchDownload.js'
+import { applyPageMeta, buildCategoryMeta } from '../utils/siteMeta.js'
 
 const props = defineProps({ name: String })
 const catalog = inject('catalog')
@@ -14,6 +15,7 @@ const uiActions = inject('uiActions')
 const settings = inject('settings')
 const getItemUrl = inject('getItemUrl')
 const flattenCategory = inject('flattenCategory')
+const siteConfig = inject('siteConfig')
 
 const BATCH = 30
 
@@ -30,37 +32,6 @@ const sw = useSwCache()
 
 let sentinelObserver = null
 let resizeTimer = null
-const originalTitle = document.title
-
-function setMeta(name, content) {
-  let el = document.querySelector(`meta[name="${name}"]`)
-  if (!el) {
-    el = document.createElement('meta')
-    el.setAttribute('name', name)
-    document.head.appendChild(el)
-  }
-  el.setAttribute('content', content)
-}
-
-function setOg(prop, content) {
-  let el = document.querySelector(`meta[property="${prop}"]`)
-  if (!el) {
-    el = document.createElement('meta')
-    el.setAttribute('property', prop)
-    document.head.appendChild(el)
-  }
-  el.setAttribute('content', content)
-}
-
-watch(() => props.name, (name) => {
-  if (!name) return
-  const title = `${name}壁纸「Ziworld」`
-  const desc = `${name}精美 4K 壁纸，二次元小窝「Ziworld」`
-  document.title = title
-  setMeta('description', desc)
-  setOg('og:title', title)
-  setOg('og:description', desc)
-}, { immediate: true })
 
 const category = computed(() => catalog.value.categories.find(c => c.name === props.name) || null)
 const allItems = computed(() => category.value ? flattenCategory(category.value) : [])
@@ -94,6 +65,15 @@ const selectedIndex = computed(() => {
   if (!selectedItem.value) return -1
   return allItems.value.findIndex(i => i.id === selectedItem.value.id && i.source === selectedItem.value.source)
 })
+
+watch(
+  [() => props.name, category, () => siteConfig.name, () => siteConfig.meta?.title, () => siteConfig.meta?.description],
+  ([name, currentCategory]) => {
+    if (!name) return
+    applyPageMeta(buildCategoryMeta(siteConfig, name, currentCategory?.cover))
+  },
+  { immediate: true },
+)
 
 watch(() => props.name, reset)
 
@@ -300,7 +280,6 @@ onUnmounted(() => {
   resetUiActions()
   uiState.selectionMode = false
   uiState.selectedCount = 0
-  document.title = originalTitle
 })
 </script>
 
@@ -312,8 +291,11 @@ onUnmounted(() => {
         <div class="cp-desc-inner">
           <div class="cp-desc-label">README</div>
           <div class="cp-desc-text">
-            <p v-for="(para, i) in descriptionParagraphs" :key="i"
-               :class="{ 'cp-desc-attribution': i === descriptionParagraphs.length - 1 }">
+            <p
+              v-for="(para, i) in descriptionParagraphs"
+              :key="i"
+              :class="{ 'cp-desc-attribution': i === descriptionParagraphs.length - 1 }"
+            >
               {{ para }}
             </p>
           </div>
@@ -337,7 +319,7 @@ onUnmounted(() => {
         <span v-if="isDownloading" class="cp-loading">正在打包 zip...</span>
         <span v-else-if="isLoadingMore" class="cp-loading">加载中...</span>
         <span v-else-if="hasMore" class="cp-hint">继续下滑加载更多</span>
-        <span v-else class="cp-end">— 到底了 —</span>
+        <span v-else class="cp-end">到底了</span>
       </div>
     </template>
 

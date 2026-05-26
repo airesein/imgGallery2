@@ -5,6 +5,7 @@ import CategoryCard from '../components/CategoryCard.vue'
 import SettingsDialog from '../components/SettingsDialog.vue'
 import { useFavorites } from '../composables/useFavorites.js'
 import { useSwCache } from '../composables/useSwCache.js'
+import { applyPageMeta, buildHomeMeta } from '../utils/siteMeta.js'
 
 const catalog = inject('catalog')
 const uiState = inject('uiState')
@@ -69,6 +70,10 @@ watchEffect(() => {
   uiState.selectedCount = 0
 })
 
+watchEffect(() => {
+  applyPageMeta(buildHomeMeta(siteConfig))
+})
+
 let resizeTimer = null
 function onResize() {
   clearTimeout(resizeTimer)
@@ -92,6 +97,7 @@ onBeforeUnmount(() => {
   <div class="cat-page">
     <div class="cat-header">
       <h1 class="cat-title">{{ siteConfig.name }}</h1>
+      <p v-if="siteConfig.description" class="cat-description">{{ siteConfig.description }}</p>
       <div class="cat-stats">
         <span>{{ categoryCovers.length }} CATEGORIES</span>
         <span class="cat-dot">•</span>
@@ -154,6 +160,14 @@ onBeforeUnmount(() => {
   letter-spacing: -0.03em;
   color: var(--text-primary);
   margin-bottom: 12px;
+}
+
+.cat-description {
+  max-width: 640px;
+  margin: 0 auto 18px;
+  color: var(--text-secondary);
+  font-size: 15px;
+  line-height: 1.7;
 }
 
 .cat-stats {

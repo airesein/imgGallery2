@@ -1,16 +1,18 @@
 <script setup>
-import { ref, computed, inject, watch, nextTick, onMounted, onUnmounted, onActivated, onDeactivated } from 'vue'
+import { ref, computed, inject, watch, watchEffect, nextTick, onMounted, onUnmounted, onActivated, onDeactivated } from 'vue'
 import MediaCard from '../components/MediaCard.vue'
 import MediaViewer from '../components/MediaViewer.vue'
 import FullscreenViewer from '../components/FullscreenViewer.vue'
 import { useFavorites } from '../composables/useFavorites.js'
 import { useSwCache } from '../composables/useSwCache.js'
 import { downloadItemsAsZip } from '../utils/batchDownload.js'
+import { applyPageMeta, buildFavoritesMeta } from '../utils/siteMeta.js'
 
 const uiState = inject('uiState')
 const uiActions = inject('uiActions')
 const settings = inject('settings')
 const getItemUrl = inject('getItemUrl')
+const siteConfig = inject('siteConfig')
 
 const { favorites, remove } = useFavorites()
 const sw = useSwCache()
@@ -69,6 +71,10 @@ watch(selectedItems, (items) => {
 
 watch(() => uiState.selectionMode, (enabled) => {
   if (!enabled) selectedKeys.value = new Set()
+})
+
+watchEffect(() => {
+  applyPageMeta(buildFavoritesMeta(siteConfig))
 })
 
 function getItemKey(item) {
