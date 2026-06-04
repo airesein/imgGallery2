@@ -12,16 +12,13 @@
     const typeParam = url.searchParams.get("type")
     const quality = url.searchParams.get("quality") || "display"
 
-    // Fetch catalog.json from the same origin
     const catalogRes = await fetch(`https://${req.headers.host}/catalog.json`)
     if (!catalogRes.ok) return json({ error: "Catalog not available" }, 500)
     const catalog = await catalogRes.json()
     const rules = catalog.rules || {}
     const categories = catalog.categories || []
 
-    if (!categoryParam) {
-      return json({ error: "Missing category", availableCategories: categories.map(c => c.name) }, 400)
-    }
+    if (!categoryParam) return json({ error: "Missing category", availableCategories: categories.map(c => c.name) }, 400)
 
     const requestedCats = categoryParam.split(",").map(s => s.trim()).filter(Boolean)
     const pool = []
@@ -47,15 +44,8 @@
     const item = pool[Math.floor(Math.random() * pool.length)]
     const targetUrl = quality === "raw" ? item.rawUrl : item.displayUrl
 
-    if (typeParam === "json") {
-      return json({ success: true, url: targetUrl, raw_url: item.rawUrl, display_url: item.displayUrl, cover_url: item.coverUrl, source: item.source, type: item.type, quality })
-    }
-
-    if (targetUrl) {
-      res.writeHead(302, { location: targetUrl, "access-control-allow-origin": "*" })
-      return res.end()
-    }
-
+    if (typeParam === "json") return json({ success: true, url: targetUrl, raw_url: item.rawUrl, display_url: item.displayUrl, cover_url: item.coverUrl, source: item.source, type: item.type, quality })
+    if (targetUrl) { res.writeHead(302, { location: targetUrl }); return res.end() }
     return json({ error: "Unable to resolve" }, 500)
   } catch (err) {
     return json({ error: "Internal error", detail: err.message }, 500)
