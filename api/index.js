@@ -12,25 +12,23 @@ function getCatalog() {
   return _catalog
 }
 
-export default async function handler(req, res) {
-  const json = (data, status = 200) => {
-    res.setHeader("access-control-allow-origin", "*")
-    res.setHeader("content-type", "application/json; charset=utf-8")
-    if (status !== 200) res.statusCode = status
-    res.end(JSON.stringify(data))
-  }
-
+export async function GET(request) {
   try {
     const catalog = getCatalog()
     const rules = catalog.rules || {}
     const categories = catalog.categories || []
 
-    const url = new URL(req.url, `http://${req.headers.host || "localhost"}`)
+    const url = new URL(request.url)
     const categoryParam = url.searchParams.get("category")
     const typeParam = url.searchParams.get("type")
     const quality = url.searchParams.get("quality") || "display"
 
-    if (!categoryParam) return json({ error: "Missing category", availableCategories: categories.map(c => c.name) }, 400)
+    if (!categoryParam) {
+      return new Response(JSON.stringify({ error: "Missing category", availableCategories: categories.map(c => c.name) }), {
+        status: 400,
+        headers: { "content-type": "application/json; charset=utf-8", "access-control-allow-origin": "*" },
+      })
+    }
 
     const requestedCats = categoryParam.split(",").map(s => s.trim()).filter(Boolean)
     const pool = []
@@ -51,15 +49,37 @@ export default async function handler(req, res) {
       }
     }
 
-    if (!pool.length) return json({ error: "No items found", availableCategories: categories.map(c => c.name) }, 404)
+    if (!pool.length) {
+      return new Response(JSON.stringify({ error: "No items found", availableCategories: categories.map(c => c.name) }), {
+        status: 404,
+        headers: { "content-type": "application/json; charset=utf-8", "access-control-allow-origin": "*" },
+      })
+    }
 
     const item = pool[Math.floor(Math.random() * pool.length)]
     const targetUrl = quality === "raw" ? item.rawUrl : item.displayUrl
 
-    if (typeParam === "json") return json({ success: true, url: targetUrl, raw_url: item.rawUrl, display_url: item.displayUrl, cover_url: item.coverUrl, source: item.source, type: item.type, quality })
-    if (targetUrl) { res.writeHead(302, { location: targetUrl }); return res.end() }
-    return json({ error: "Unable to resolve" }, 500)
+    const cors = { "access-control-allow-origin": "*" }
+
+    if (typeParam === "json") {
+      return new Response(JSON.stringify({ success: true, url: targetUrl, raw_url: item.rawUrl, display_url: item.displayUrl, cover_url: item.coverUrl, source: item.source, type: item.type, quality }), {
+        status: 200,
+        headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-cache", ...cors },
+      })
+    }
+
+    if (targetUrl) {
+      return new Response(null, { status: 302, headers: { location: targetUrl, ...cors } })
+    }
+
+    return new Response(JSON.stringify({ error: "Unable to resolve" }), {
+      status: 500,
+      headers: { "content-type": "application/json; charset=utf-8", ...cors },
+    })
   } catch (err) {
-    return json({ error: "Internal error", detail: err.message }, 500)
+    return new Response(JSON.stringify({ error: "Internal error", detail: err.message }), {
+      status: 500,
+      headers: { "content-type": "application/json; charset=utf-8", "access-control-allow-origin": "*" },
+    })
   }
 }
