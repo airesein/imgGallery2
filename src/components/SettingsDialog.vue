@@ -43,28 +43,28 @@ onUnmounted(closeStats)
     <div v-if="showSettings" class="settings-overlay" @click.self="showSettings = false">
       <div class="settings-panel">
         <div class="settings-header">
-          <h3>Settings</h3>
+          <h3>设置</h3>
           <button class="settings-close" @click="showSettings = false">&times;</button>
         </div>
         <div class="settings-body">
           <div class="settings-row">
-            <label class="settings-label">Card Gap <span class="settings-value">{{ settings.cardGap }}px</span></label>
+            <label class="settings-label">卡片间距 <span class="settings-value">{{ settings.cardGap }}px</span></label>
             <input type="range" class="settings-range" min="6" max="20" :value="settings.cardGap" @input="setSetting('cardGap', Number($event.target.value))" />
           </div>
           <div class="settings-row">
-            <label class="settings-label">Columns <span class="settings-value">{{ settings.columns || 'Auto' }}</span></label>
+            <label class="settings-label">列数 <span class="settings-value">{{ settings.columns || '自动' }}</span></label>
             <input type="range" class="settings-range" min="0" max="6" :value="settings.columns" @input="setSetting('columns', Number($event.target.value))" />
           </div>
           <div class="settings-row">
-            <button class="settings-btn" @click="resetSettings">Reset Defaults</button>
+            <button class="settings-btn" @click="resetSettings">重置默认值</button>
           </div>
 
           <div class="settings-divider"></div>
 
-          <div class="settings-section-title">Cache</div>
+          <div class="settings-section-title">缓存</div>
 
           <div class="settings-row">
-            <label class="settings-label">Service Worker Cache</label>
+            <label class="settings-label">Service Worker 缓存</label>
             <label class="settings-toggle">
               <input type="checkbox" :checked="isEnabled" @change="toggleEnabled" />
               <span class="settings-toggle-track"></span>
@@ -74,34 +74,34 @@ onUnmounted(closeStats)
           <div class="settings-row" v-if="isEnabled">
             <div class="settings-stats">
               <div class="settings-stat-row">
-                <span class="settings-stat-label">Cached Items</span>
+                <span class="settings-stat-label">已缓存项</span>
                 <span class="settings-stat-value">{{ stats.itemCount.toLocaleString() }}</span>
               </div>
               <div class="settings-stat-row settings-stat-sub">
-                <span>P1 (Category Covers)</span>
+                <span>P1 (分类封面)</span>
                 <span>{{ stats.byLevel[1] }}</span>
               </div>
               <div class="settings-stat-row settings-stat-sub">
-                <span>P2 (Fav Covers)</span>
+                <span>P2 (收藏封面)</span>
                 <span>{{ stats.byLevel[2] }}</span>
               </div>
               <div class="settings-stat-row settings-stat-sub">
-                <span>P3 (Fav Display)</span>
+                <span>P3 (收藏预览)</span>
                 <span>{{ stats.byLevel[3] }}</span>
               </div>
               <div class="settings-stat-row settings-stat-sub">
-                <span>P4 (Other Covers)</span>
+                <span>P4 (其他封面)</span>
                 <span>{{ stats.byLevel[4] }}</span>
               </div>
               <div class="settings-stat-row settings-stat-sub">
-                <span>P5 (Other Display)</span>
+                <span>P5 (其他预览)</span>
                 <span>{{ stats.byLevel[5] }}</span>
               </div>
             </div>
           </div>
 
           <div class="settings-row">
-            <button class="settings-reset settings-clear" @click="clearHandler">Clear Cache</button>
+            <button class="settings-reset settings-clear" @click="clearHandler">清除缓存</button>
           </div>
         </div>
       </div>

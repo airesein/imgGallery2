@@ -37,9 +37,8 @@ function goToCategories() { uiState.searchQuery = ''; router.push('/') }
 </script>
 
 <template>
-  <nav v-if="!isCatView" class="nav-pill">
-    <button class="nav-back" @click="goToCategories">
-      {{ isFavView ? '收藏' : (currentCategory?.name || '分类') }}
+  <nav v-if="!isCatView && route.name !== 'api-docs' && route.name !== 'admin'" class="nav-pill">
+    <button class="nav-back" @click="goToCategories"><svg class="nav-back-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10L12 3l9 7v9a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><path d="M9 21V12h6v9"/></svg>{{ isFavView ? '收藏' : (currentCategory?.name || '分类') }}
     </button>
 
     <span class="nav-count">{{ uiState.currentCount }} 项</span>
@@ -82,11 +81,15 @@ function goToCategories() { uiState.searchQuery = ''; router.push('/') }
 }
 
 .nav-back {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   background: none; border: none; color: var(--text-body); font-size: 14px; font-weight: 600;
   cursor: pointer; padding: 3px 10px; border-radius: 16px; white-space: nowrap;
   transition: background 0.15s;
 }
 .nav-back:hover { background: rgba(30,32,34,0.05); }
+.nav-back-icon { width: 15px; height: 15px; flex-shrink: 0; display: block; transform: translateY(1px); }
 
 .nav-count { color: var(--text-muted); font-size: 12px; white-space: nowrap; }
 

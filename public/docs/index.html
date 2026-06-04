@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="referrer" content="no-referrer">
+<title>随机图片 API 文档 - Ziworld</title>
+<meta name="description" content="随机图片API接口文档，支持按分类筛选">
+<meta name="theme-color" content="#fcfbfa">
+<meta property="og:title" content="API文档 - Ziworld">
+<meta property="og:description" content="随机图片API接口文档，支持按分类筛选">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://gallery.ziworld.top/docs/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="API文档 - Ziworld">
+<meta name="twitter:description" content="随机图片API接口文档，支持按分类筛选">
+<link rel="canonical" href="https://gallery.ziworld.top/docs/">
+<link rel="icon" href="/favicon.ico">
+<style>
+:root {
+  --bg-main: #fcfbfa;
+  --bg-surface: #f5f3ef;
+  --text-primary: #1e2022;
+  --text-body: #2c2f33;
+  --text-secondary: #686d73;
+  --text-muted: #a0a5ab;
+  --color-accent: #b38e6d;
+  --border-subtle: rgba(30,32,34,0.06);
+  --border-active: rgba(179,142,109,0.4);
+}
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: var(--bg-main);
+  color: var(--text-body);
+  min-height: 100vh;
+  -webkit-user-select: text;
+  user-select: text;
+}
+a { color: inherit; text-decoration: none; }
+::selection { background: rgba(179,142,109,0.2); color: var(--text-primary); }
+
+.page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 36px 20px 80px;
+}
+
+.back {
+  display: inline-block;
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+  transition: color 0.2s;
+}
+.back:hover { color: var(--text-primary); }
+
+h1 {
+  font-size: 36px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--text-primary);
+  text-align: center;
+}
+.subtitle {
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 8px 0 16px;
+}
+
+.base-url {
+  display: block;
+  width: fit-content;
+  margin: 0 auto 48px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 10px 22px;
+  font-size: 15px;
+  color: var(--color-accent);
+  font-family: 'SF Mono','Fira Code','Consolas',monospace;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  border: 1px solid var(--border-subtle);
+}
+.base-url:hover { border-color: var(--border-active); background: var(--bg-main); }
+
+section { margin-bottom: 40px; }
+h2 {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 14px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+th, td {
+  text-align: left;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+th {
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+code {
+  background: var(--bg-surface);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 13px;
+  color: var(--color-accent);
+  font-family: 'SF Mono','Fira Code','Consolas',monospace;
+}
+
+.url-row {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  font-size: 13px;
+  color: var(--color-accent);
+  font-family: 'SF Mono','Fira Code','Consolas',monospace;
+  word-break: break-all;
+  margin-bottom: 8px;
+}
+.url-row:hover { border-color: var(--border-active); background: var(--bg-main); }
+
+.cats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.cat-tag {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 13px;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+.cat-tag:hover { border-color: var(--border-active); background: var(--bg-main); }
+.cat-tag .count { color: var(--text-muted); font-size: 12px; margin-left: 4px; }
+
+footer {
+  text-align: center;
+  padding-top: 32px;
+  border-top: 1px solid var(--border-subtle);
+  margin-top: 20px;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+footer a { transition: color 0.2s; }
+footer a:hover { color: var(--text-primary); }
+
+.toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: rgba(252,251,250,0.95);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(30,32,34,0.06);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+  font-size: 13px;
+  color: var(--text-primary);
+  opacity: 0;
+  transform: translateX(20px);
+  transition: all 0.25s ease;
+  pointer-events: none;
+  z-index: 9999;
+}
+.toast.show { opacity: 1; transform: translateX(0); }
+
+@media (max-width: 600px) {
+  .page { padding: 20px 16px 60px; }
+  h1 { font-size: 26px; }
+  h2 { font-size: 17px; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <a href="/" class="back">&larr; 返回首页</a>
+  <h1>随机图片 API</h1>
+  <p class="subtitle">接口地址（点击复制）</p>
+  <button class="base-url" onclick="copy('https://gallery.ziworld.top/api')">https://gallery.ziworld.top/api</button>
+
+  <section>
+    <h2>参数</h2>
+    <table>
+      <thead><tr><th>参数</th><th>必填</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td><code>category</code></td><td>是</td><td>分类名称，多个用英文逗号 <code>,</code> 分隔，区分大小写</td></tr>
+        <tr><td><code>type</code></td><td>否</td><td>设为 <code>json</code> 时返回 JSON，默认直接重定向图片</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>请求示例（点击复制）</h2>
+    <button class="url-row" onclick="copy('https://gallery.ziworld.top/api?category=原神')">https://gallery.ziworld.top/api?category=原神</button>
+    <button class="url-row" onclick="copy('https://gallery.ziworld.top/api?category=原神,PC,二次元')">https://gallery.ziworld.top/api?category=原神,PC,二次元</button>
+    <button class="url-row" onclick="copy('https://gallery.ziworld.top/api?category=原神&amp;type=json')">https://gallery.ziworld.top/api?category=原神&amp;type=json</button>
+  </section>
+
+  <section>
+    <h2>可用分类（点击复制）</h2>
+    <div class="cats" id="cat-container">加载中...</div>
+    <p style="font-size:12px;color:var(--text-muted);margin-top:10px">
+      必须使用英文逗号 <code>,</code> 分隔，不支持中文逗号；分类名区分大小写。
+    </p>
+  </section>
+
+  <section>
+    <h2>HTML 使用示例（点击复制）</h2>
+    <button class="url-row" onclick="copy('<img src=&quot;https://gallery.ziworld.top/api?category=二次元&quot; alt=&quot;&quot; />')">&lt;img src="https://gallery.ziworld.top/api?category=二次元" alt="" /&gt;</button>
+  </section>
+
+  <footer><a href="/">&larr; 返回图库</a></footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var BASE = 'https://gallery.ziworld.top/api'
+
+function copy(text) {
+  var ta = document.createElement('textarea')
+  ta.value = text
+  ta.style.position = 'fixed'
+  ta.style.left = '-9999px'
+  document.body.appendChild(ta)
+  ta.select()
+  try {
+    document.execCommand('copy')
+    showToast('已复制到剪贴板')
+  } catch (e) {
+    showToast('复制失败，请手动选择')
+  }
+  document.body.removeChild(ta)
+}
+
+var toastTimer
+function showToast(msg) {
+  clearTimeout(toastTimer)
+  var el = document.getElementById('toast')
+  el.textContent = msg
+  el.classList.add('show')
+  toastTimer = setTimeout(function () { el.classList.remove('show') }, 2000)
+}
+
+fetch('/catalog.json')
+  .then(function (r) { return r.json() })
+  .then(function (data) {
+    var container = document.getElementById('cat-container')
+    container.innerHTML = ''
+    var cats = data.categories || []
+    cats.sort(function (a, b) { return a.name.localeCompare(b.name) })
+    cats.forEach(function (c) {
+      var btn = document.createElement('button')
+      btn.className = 'cat-tag'
+      btn.textContent = c.name
+      var span = document.createElement('span')
+      span.className = 'count'
+      span.textContent = c.total
+      btn.appendChild(span)
+      btn.title = c.name + '（' + c.total + ' 项）'
+      btn.onclick = function () { copy(c.name) }
+      container.appendChild(btn)
+    })
+  })
+  .catch(function () {
+    document.getElementById('cat-container').textContent = '加载分类失败'
+  })
+</script>
+</body>
+</html>

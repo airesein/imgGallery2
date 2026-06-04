@@ -1,11 +1,17 @@
 <script setup>
 import { ref, computed, inject, onMounted, onUnmounted } from 'vue'
+import { useFavorites } from '../composables/useFavorites.js'
+import { useDownload } from '../composables/useDownload.js'
 
 const props = defineProps({ item: Object, selectable: Boolean, selected: Boolean })
 const emit = defineEmits(['click'])
 
 const getItemUrl = inject('getItemUrl')
+const getItemDownload = inject('getItemDownload')
 const isVideoFn = inject('isVideo')
+const showToast = inject('showToast')
+const { toggle, isFav } = useFavorites()
+const { startSingle } = useDownload()
 
 const loaded = ref(false)
 const failed = ref(false)
@@ -20,6 +26,8 @@ const ratio = ref('')
 const RATIO_KEY = 'gallery-item-ratios'
 const baseCoverUrl = getItemUrl(props.item, 'cover')
 const coverUrl = ref(baseCoverUrl)
+const displayUrl = computed(() => getItemUrl(props.item, 'display'))
+const rawUrl = computed(() => getItemUrl(props.item, 'raw'))
 
 function loadRatioCache() {
   try {
@@ -38,6 +46,39 @@ onMounted(() => {
 onUnmounted(() => {
   if (retryTimer.value) clearTimeout(retryTimer.value)
 })
+
+function onContextMenu(e) {
+  e.preventDefault()
+  if (e.ctrlKey) {
+    const wasFav = isFav(props.item)
+    toggle(props.item)
+    showToast(wasFav ? '已取消收藏' : '已收藏')
+    return
+  }
+  const url = displayUrl.value
+  if (url) navigator.clipboard.writeText(url).then(() => showToast('链接已复制')).catch(() => {})
+}
+
+function onMouseDown(e) {
+  if (e.button === 1) {
+    e.preventDefault()
+    const url = rawUrl.value
+    if (!url) return
+    const fileName = url.split('?')[0].split('/').pop() || 'download'
+    startSingle(url, fileName, getItemDownload(props.item))
+  }
+}
+
+function onCardClick(e) {
+  if (e.ctrlKey) {
+    e.preventDefault()
+    e.stopPropagation()
+    const url = displayUrl.value
+    if (url) { window.open(url, '_blank'); showToast('已在新窗口打开') }
+    return
+  }
+  emit('click')
+}
 
 function onLoad(e) {
   const img = e?.target
@@ -73,7 +114,7 @@ function onError() {
 </script>
 
 <template>
-  <div class="mc" :class="{ selectable, selected }" @click="emit('click')">
+  <div class="mc" :class="{ selectable, selected }" @click="onCardClick" @contextmenu="onContextMenu" @mousedown="onMouseDown">
     <div class="mc-img" :class="{ loaded, failed }">
       <div v-if="!loaded" class="mc-skeleton"></div>
       <img

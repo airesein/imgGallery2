@@ -79,6 +79,7 @@ export function generateSitemap() {
   }
 
   urls.push({ loc: '/favorites', lastmod: globalLastmod, priority: '0.3', changefreq: 'monthly' })
+  urls.push({ loc: '/docs', lastmod: globalLastmod, priority: '0.6', changefreq: 'monthly' })
 
   for (const cat of categories) {
     const catDir = path.join(dataDir, cat.name)

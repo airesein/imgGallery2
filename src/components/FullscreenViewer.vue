@@ -6,6 +6,7 @@ const emit = defineEmits(['close'])
 
 const getItemUrl = inject('getItemUrl')
 const isVideoFn = inject('isVideo')
+const previewActive = inject('previewActive')
 
 const currentIdx = ref(props.currentIndex)
 const displayMode = ref('contain')
@@ -78,6 +79,7 @@ watch(currentItem, () => {
 })
 
 onMounted(() => {
+  if (previewActive) previewActive.value = true
   enterFS()
   document.documentElement.style.overflow = 'hidden'
   document.body.style.overflow = 'hidden'
@@ -87,6 +89,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  if (previewActive) previewActive.value = false
   document.documentElement.style.overflow = ''
   document.body.style.overflow = ''
   document.removeEventListener('keydown', onKey)

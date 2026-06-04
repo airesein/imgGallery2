@@ -1,7 +1,8 @@
 <script setup>
-import { computed, ref, watch, inject, onUnmounted } from 'vue'
+import { computed, ref, watch, inject, onMounted, onUnmounted } from 'vue'
 import { useFavorites } from '../composables/useFavorites.js'
 import { useSwCache } from '../composables/useSwCache.js'
+import { useDownload } from '../composables/useDownload.js'
 
 const props = defineProps({ item: Object })
 const emit = defineEmits(['close', 'fullscreen'])
@@ -10,7 +11,9 @@ const { isFav, toggle } = useFavorites()
 const getItemUrl = inject('getItemUrl')
 const isVideoFn = inject('isVideo')
 const getItemDownload = inject('getItemDownload')
+const previewActive = inject('previewActive')
 const sw = useSwCache()
+const { startSingle } = useDownload()
 
 const isVideo = computed(() => isVideoFn(props.item))
 const favored = computed(() => isFav(props.item))
@@ -75,56 +78,18 @@ watch(() => props.item, () => {
   if (urls.length) sw.setPriority(urls, 5)
 }, { immediate: true })
 
+onMounted(() => { if (previewActive) previewActive.value = true })
 onUnmounted(() => {
   clearProgress()
   if (retryTimer.value) clearTimeout(retryTimer.value)
+  if (previewActive) previewActive.value = false
 })
 
-function onDisplayError() {
-  if (displayFailed.value) return
-  if (retryTimer.value) clearTimeout(retryTimer.value)
-  
-  if (retryCount.value < MAX_RETRIES) {
-    retryCount.value++
-    const delay = 800 * retryCount.value
-    retryTimer.value = setTimeout(() => {
-      if (!displayFailed.value) displayFailed.value = false
-    }, delay)
-  } else {
-    displayFailed.value = true
-    fullLoaded.value = true
-  }
-}
-
 function download() {
-  const dlType = getItemDownload(props.item)
-  if (dlType === 'js') {
-    downloadViaJs(rawUrl.value)
-  } else {
-    window.open(rawUrl.value, '_blank', 'noopener')
-  }
-}
-
-async function downloadViaJs(url) {
-  try {
-    const r = await fetch(url, {
-      mode: 'cors',
-      credentials: 'omit',
-      referrerPolicy: 'no-referrer',
-    })
-    if (!r.ok) throw new Error(`HTTP_${r.status}`)
-    const blob = await r.blob()
-    const u = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = u
-    a.download = url.split('?')[0].split('/').pop() || 'download'
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(u)
-  } catch {
-    window.open(url, '_blank', 'noopener')
-  }
+  const url = rawUrl.value
+  if (!url) return
+  const fileName = url.split('?')[0].split('/').pop() || 'download'
+  startSingle(url, fileName, getItemDownload(props.item))
 }
 
 function onBackdrop() {

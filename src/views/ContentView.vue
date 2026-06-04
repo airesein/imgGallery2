@@ -5,7 +5,7 @@ import MediaViewer from '../components/MediaViewer.vue'
 import FullscreenViewer from '../components/FullscreenViewer.vue'
 import { useFavorites } from '../composables/useFavorites.js'
 import { useSwCache } from '../composables/useSwCache.js'
-import { downloadItemsAsZip } from '../utils/batchDownload.js'
+import { useDownload } from '../composables/useDownload.js'
 import { applyPageMeta, buildCategoryMeta } from '../utils/siteMeta.js'
 
 const props = defineProps({ name: String })
@@ -23,12 +23,13 @@ const loadedCount = ref(BATCH)
 const selectedItem = ref(null)
 const fsIndex = ref(-1)
 const isLoadingMore = ref(false)
-const isDownloading = ref(false)
 const sentinelRef = ref(null)
 const selectedKeys = ref(new Set())
 
 const { add } = useFavorites()
 const sw = useSwCache()
+const { tasks, startBatch } = useDownload()
+const hasActiveBatch = computed(() => tasks.value.some(t => t.type === 'batch' && t.status === 'downloading'))
 
 let sentinelObserver = null
 let resizeTimer = null
@@ -177,35 +178,9 @@ function batchFavorite() {
 }
 
 async function batchDownload() {
-  if (!selectedItems.value.length || isDownloading.value) return
-  isDownloading.value = true
-  uiState.downloadProgress = 0
-  uiState.downloadTotal = selectedItems.value.length
-  uiState.downloadFailures = 0
-  uiState.downloadStatus = 'downloading'
-  try {
-    const failures = await downloadItemsAsZip(
-      selectedItems.value,
-      `${props.name || 'gallery'}-${Date.now()}`,
-      (progress, total, fails, status) => {
-        uiState.downloadProgress = progress
-        uiState.downloadTotal = total
-        uiState.downloadFailures = fails
-        uiState.downloadStatus = status || 'downloading'
-      },
-      getItemUrl,
-    )
-    uiState.downloadStatus = 'done'
-    if (failures.length) {
-      window.alert(`打包完成，但有 ${failures.length} 个资源下载失败，可能是源站限制了浏览器直接抓取。`)
-    }
-    clearSelection()
-  } catch {
-    window.alert('打包失败：浏览器无法直接抓取这些资源，可能是跨域或源站限制导致。')
-  } finally {
-    isDownloading.value = false
-    setTimeout(() => { uiState.downloadStatus = '' }, 1500)
-  }
+  if (!selectedItems.value.length) return
+  startBatch(selectedItems.value, getItemUrl, `${props.name || 'gallery'}-${Date.now()}`)
+  clearSelection()
 }
 
 function bindUiActions() {
@@ -316,7 +291,7 @@ onUnmounted(() => {
       </div>
 
       <div ref="sentinelRef" class="cp-sentinel">
-        <span v-if="isDownloading" class="cp-loading">正在打包 zip...</span>
+        <span v-if="hasActiveBatch" class="cp-loading">正在打包 zip...</span>
         <span v-else-if="isLoadingMore" class="cp-loading">加载中...</span>
         <span v-else-if="hasMore" class="cp-hint">继续下滑加载更多</span>
         <span v-else class="cp-end">到底了</span>

@@ -90,6 +90,26 @@ export function buildCategoryMeta(siteConfig = {}, categoryName, cover = '') {
   }
 }
 
+export function buildApiDocsMeta(siteConfig = {}) {
+  const siteTitle = getSiteTitle(siteConfig)
+  const description = '随机图片API接口文档，支持按分类筛选，适合博客、网站背景、随机图片展示等场景'
+  const ogImage = cleanText(siteConfig.meta?.ogImage)
+  return {
+    title: `API文档 - ${siteTitle}`,
+    description,
+    keywords: joinKeywords('API', '随机图片', '接口文档', getSiteKeywords(siteConfig)),
+    ogTitle: `API文档 - ${siteTitle}`,
+    ogDescription: description,
+    ogImage,
+    twitterTitle: `API文档 - ${siteTitle}`,
+    twitterDescription: description,
+    twitterImage: ogImage,
+    canonicalUrl: resolveSiteUrl(siteConfig, '/docs/'),
+    themeColor: getSiteThemeColor(siteConfig),
+    favicon: getSiteFavicon(siteConfig),
+  }
+}
+
 export function buildFavoritesMeta(siteConfig = {}) {
   const siteTitle = getSiteTitle(siteConfig)
   const description = '收藏壁纸'

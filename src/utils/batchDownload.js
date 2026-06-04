@@ -17,12 +17,13 @@ function getFileName(item, index, contentType) {
   return `${index + 1}-${safeId}.${ext}`
 }
 
-export async function downloadItemsAsZip(items, zipName = 'gallery-download', onProgress = null, getItemUrl = null) {
+export async function downloadItemsAsZip(items, zipName = 'gallery-download', onProgress = null, getItemUrl = null, signal = null) {
   const zip = new JSZip()
   const failures = []
   const total = items.length
 
   for (let i = 0; i < total; i++) {
+    if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
     const item = items[i]
     const rawUrl = getItemUrl ? getItemUrl(item, 'raw') : item.raw
     try {
@@ -30,6 +31,7 @@ export async function downloadItemsAsZip(items, zipName = 'gallery-download', on
         mode: 'cors',
         credentials: 'omit',
         referrerPolicy: 'no-referrer',
+        signal,
       })
       if (!response.ok) throw new Error(`HTTP_${response.status}`)
       const blob = await response.blob()
@@ -44,6 +46,8 @@ export async function downloadItemsAsZip(items, zipName = 'gallery-download', on
   if (Object.keys(zip.files).length === 0) {
     throw new Error('NO_FILES_ADDED')
   }
+
+  if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
 
   if (onProgress) onProgress(total, total, failures.length, 'generating')
 

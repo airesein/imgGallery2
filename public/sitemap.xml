@@ -367,6 +367,12 @@
     <changefreq>weekly</changefreq>
   </url>
   <url>
+    <loc>https://gallery.ziworld.top/docs</loc>
+    <lastmod>2026-05-24</lastmod>
+    <priority>0.6</priority>
+    <changefreq>monthly</changefreq>
+  </url>
+  <url>
     <loc>https://gallery.ziworld.top/favorites</loc>
     <lastmod>2026-05-24</lastmod>
     <priority>0.3</priority>
