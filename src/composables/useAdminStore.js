@@ -198,7 +198,8 @@ async function loadFromGitHub() {
     categories.splice(0, categories.length);
     for (var i = 0; i < catalog.categories.length; i++) {
       var cat = catalog.categories[i];
-      categories.push({ name: cat.name, description: cat.description || "", items: [] });
+      var items = (cat.items || []).map(function(it) { return { source: it.source, ids: it.ids.slice() }; });
+      categories.push({ name: cat.name, description: cat.description || "", items: items });
     }
 
     _origRules = JSON.parse(JSON.stringify(rulesData));
