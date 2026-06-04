@@ -1,4 +1,18 @@
-﻿export default async function handler(req, res) {
+﻿import { readFileSync } from "fs"
+import { join, dirname } from "path"
+import { fileURLToPath } from "url"
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
+let _catalog = null
+
+function getCatalog() {
+  if (!_catalog) {
+    _catalog = JSON.parse(readFileSync(join(__dirname, "catalog.json"), "utf-8"))
+  }
+  return _catalog
+}
+
+export default async function handler(req, res) {
   const json = (data, status = 200) => {
     res.setHeader("access-control-allow-origin", "*")
     res.setHeader("content-type", "application/json; charset=utf-8")
@@ -7,16 +21,14 @@
   }
 
   try {
+    const catalog = getCatalog()
+    const rules = catalog.rules || {}
+    const categories = catalog.categories || []
+
     const url = new URL(req.url, `http://${req.headers.host || "localhost"}`)
     const categoryParam = url.searchParams.get("category")
     const typeParam = url.searchParams.get("type")
     const quality = url.searchParams.get("quality") || "display"
-
-    const catalogRes = await fetch(`https://${req.headers.host}/catalog.json`)
-    if (!catalogRes.ok) return json({ error: "Catalog not available" }, 500)
-    const catalog = await catalogRes.json()
-    const rules = catalog.rules || {}
-    const categories = catalog.categories || []
 
     if (!categoryParam) return json({ error: "Missing category", availableCategories: categories.map(c => c.name) }, 400)
 
